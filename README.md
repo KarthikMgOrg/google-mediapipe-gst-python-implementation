@@ -17,10 +17,8 @@ This project is designed for **low-latency, high-throughput computer vision pipe
 
 ```plaintext
 .
-├── producer.py           # GStreamer frame producer writing to shared memory
-├── consumer.py           # Multi-process consumers reading and processing batches
+├── gaze_tracker.py       # gaze tracking function
 ├── utils.py              # Shared utilities (e.g., batch handling, frame reshaping)
-├── main.py               # Pipeline launcher and process manager
 ├── requirements.txt      # Python package dependencies
 └── README.md             # Project documentation
 ```
@@ -78,11 +76,11 @@ matplotlib
 Run the pipeline:
 
 ```bash
-python main.py
+python manage.py runserver
 ```
 
 **Customize:**
-- Adjust `BATCH_SIZE` and `FRAME_SHAPE` in `main.py`
+- Adjust `BATCH_SIZE` and `FRAME_SHAPE` in `utils.py`
 - Integrate your own Mediapipe feature extraction functions in `consumer.py`
 
 ---
