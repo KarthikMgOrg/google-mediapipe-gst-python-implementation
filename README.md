@@ -5,6 +5,13 @@
   <img width="45%" style="margin: 10px; alt="Screenshot 2025-07-02 at 7 30 54 PM" src="https://github.com/user-attachments/assets/3e2c62b3-e2ef-4850-9b13-7282221d20ab" /><br>
 </p>
 
+### Demo:
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/dc63492a-ce12-479b-81af-b61e4d9a737d" alt="GIF Demo" width="400"/></td>
+    <td><img src="https://github.com/user-attachments/assets/f7b0ec45-dfcd-44e9-bc77-9bb159b24277" alt="App Screenshot" width="400"/></td>
+  </tr>
+</table>
 
 
 ## 🚀 Real-Time GStreamer Video Processing with Shared Memory and Batch Processing
