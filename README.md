@@ -1,5 +1,12 @@
 # 📦 google-mediapipe-gst-python-implementation
 
+<p align="center">
+  <img width="45%" style="margin: 10px; alt="Screenshot 2025-07-02 at 7 30 54 PM" src="https://github.com/user-attachments/assets/ec9f64d4-4c68-41ed-aaa2-18fdf31fb0c0" />
+  <img width="45%" style="margin: 10px; alt="Screenshot 2025-07-02 at 7 30 54 PM" src="https://github.com/user-attachments/assets/3e2c62b3-e2ef-4850-9b13-7282221d20ab" /><br>
+</p>
+
+
+
 ## 🚀 Real-Time GStreamer Video Processing with Shared Memory and Batch Processing
 
 **google-mediapipe-gst-python-implementation** is a high-performance, real-time video processing pipeline that:
