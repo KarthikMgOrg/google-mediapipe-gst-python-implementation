@@ -10,7 +10,7 @@ from gi.repository import Gst
 import numpy as np
 from multiprocessing import shared_memory, Process, Queue
 import time
-from mediapipe_utils.gaze_tracker import process_batches_with_facemesh, process_batches_with_mood_analysis
+from mediapipe_utils.processor import process_batches_with_facemesh, process_batches_with_mood_analysis, process_batches_with_head_pose
 
 os.environ['GST_GL_API'] = 'disabled'
 gi.require_version('Gst', '1.0')
@@ -23,7 +23,7 @@ BATCH_SIZE = 5
 
 
 def gst_frame_producer(url, benchmark_result, shm_name, frame_shape, control_queues, batch_size=5):
-    print('started producer')
+    # print('started producer')
     benchmark_result['start_time'] = time.time()
 
     # Create pipeline and elements
@@ -51,7 +51,7 @@ def gst_frame_producer(url, benchmark_result, shm_name, frame_shape, control_que
 
     for elem in [src, queue1, demuxer, queue2, decoder, queue3, convert, scale, capsfilter, sink]:
         if not elem:
-            print(f"Element creation failed.")
+            # print(f"Element creation failed.")
             return
         pipeline.add(elem)
 
@@ -66,7 +66,7 @@ def gst_frame_producer(url, benchmark_result, shm_name, frame_shape, control_que
     capsfilter.link(sink)
 
     def on_pad_added(demuxer, pad):
-        print("Dynamic pad created, linking demuxer to decoder...")
+        # print("Dynamic pad created, linking demuxer to decoder...")
         sink_pad = queue2.get_static_pad("sink")
         if not sink_pad.is_linked():
             pad.link(sink_pad)
@@ -80,7 +80,7 @@ def gst_frame_producer(url, benchmark_result, shm_name, frame_shape, control_que
     frame_count = 0
     pipeline.set_state(Gst.State.PLAYING)
 
-    print('Pipeline set to PLAYING. Waiting for bus messages...')
+    # print('Pipeline set to PLAYING. Waiting for bus messages...')
     bus = pipeline.get_bus()
     while True:
         msg = bus.timed_pop_filtered(
@@ -89,22 +89,24 @@ def gst_frame_producer(url, benchmark_result, shm_name, frame_shape, control_que
         if msg:
             if msg.type == Gst.MessageType.ERROR:
                 err, debug = msg.parse_error()
-                print(f"Error received from element {msg.src.get_name()}: {err}")
-                print(f"Debugging information: {debug}")
+                # print(f"Error received from element {msg.src.get_name()}: {err}")
+                # print(f"Debugging information: {debug}")
                 return
             elif msg.type == Gst.MessageType.EOS:
-                print("End-Of-Stream reached.")
+                # print("End-Of-Stream reached.")
                 return
             elif msg.type == Gst.MessageType.STATE_CHANGED:
                 old_state, new_state, pending_state = msg.parse_state_changed()
                 if msg.src == pipeline:
-                    print(f"Pipeline state changed from {old_state.value_nick} to {new_state.value_nick}.")
+                    pass
+                    # print(f"Pipeline state changed from {old_state.value_nick} to {new_state.value_nick}.")
 
                 if new_state == Gst.State.PLAYING:
-                    print("Pipeline is now PLAYING.")
+                    # print("Pipeline is now PLAYING.")
                     break
         else:
-            print("No bus message received. Retrying...")
+            pass
+            # print("No bus message received. Retrying...")
     batch_count = 0
     while True:
         sample = sink.emit('pull-sample')
@@ -135,16 +137,18 @@ def gst_frame_producer(url, benchmark_result, shm_name, frame_shape, control_que
                         batch_index = 0
                         batch_count +=1
                 else:
-                    print(f"Frame shape {frame.shape} does not match expected {frame_shape}, skipping frame.")
+                    pass
+                    # print(f"Frame shape {frame.shape} does not match expected {frame_shape}, skipping frame.")
             else:
-                print(f"Warning: Frame size mismatch. Expected {expected_size} elements, got {frame.size}")
+                pass
+                # print(f"Warning: Frame size mismatch. Expected {expected_size} elements, got {frame.size}")
             buffer.unmap(map_info)
         else:
             break
 
     # if batch_index > 0:
     #     batch_queue.put(('new_batch', batch_index))
-    print('ALL DONE')
+    # print('ALL DONE')
     for control_queue in control_queues:
         control_queue.put(('stop', None, batch_count))
     # batch_queue.put(('stop', None))
@@ -155,16 +159,19 @@ def gst_frame_producer(url, benchmark_result, shm_name, frame_shape, control_que
 
 
 def gst_frame_consumer(shm_name, control_queues, result_queue, process_id):
-    print('Started consumer on main thread')
+    # print('Started consumer on main thread')
 
     facemesh_process = Process(target=process_batches_with_facemesh, args=(control_queues[0], shm_name, result_queue))
     mood_analysis_process = Process(target=process_batches_with_mood_analysis, args=(control_queues[1], shm_name, result_queue))
+    # headpose_estimation = Process(target=process_batches_with_head_pose, args=(control_queues[2], shm_name, result_queue))
 
     facemesh_process.start()
     mood_analysis_process.start()
+    # headpose_estimation.start()
 
     facemesh_process.join()
     mood_analysis_process.join()
+    # headpose_estimation.join()
 
-    print('Finished all consumers')
+    # print('Finished all consumers')
 
