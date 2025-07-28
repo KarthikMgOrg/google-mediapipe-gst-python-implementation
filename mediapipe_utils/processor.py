@@ -28,6 +28,7 @@ def get_video_fps_from_file(video_path="https://d1e6cahdfvkipq.cloudfront.net/vi
         print(f"Error downloading or reading video: {e}")
         return 30
 
+
 FRAME_RATE = get_video_fps_from_file()
 
 
@@ -46,7 +47,8 @@ def process_batches_with_facemesh(control_queue_facemesh, shm_name, result_queue
     import queue
     while True:
         try:
-            signal, valid_frames, batch_number = control_queue_facemesh.get(timeout=60)
+            signal, valid_frames, batch_number = control_queue_facemesh.get(
+                timeout=60)
         except queue.Empty:
             # print("[Facemesh] Queue timed out. Exiting.")
             break
@@ -58,7 +60,7 @@ def process_batches_with_facemesh(control_queue_facemesh, shm_name, result_queue
             frame = batch_buffer[idx].copy()
             # print(
             #     f"processed frame {idx} with shape: {frame.shape}")
-            
+
             rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             results = face_mesh.process(rgb_frame)
             if results.multi_face_landmarks:
@@ -127,21 +129,21 @@ def process_batches_with_facemesh(control_queue_facemesh, shm_name, result_queue
         existing_counter = Counter(result_queue["eye_out_of_view"])
         # Update with current batch
         face_out_counter = Counter([item['video_timestamp']
-                                for item in results_for_batch])
+                                    for item in results_for_batch])
         existing_counter.update(face_out_counter)
         # print(existing_counter, " existing counter")
 
         # Save back
         result_queue["eye_out_of_view"] = dict(existing_counter)
         # print('end of batch')
-    
+
     from .utils import group_gazes
     updated_eye_out_of_view = group_gazes(result_queue["eye_out_of_view"])
     result_queue['eye_out_of_view'] = updated_eye_out_of_view
     face_mesh.close()
     shm.close()
     # print('Finished consumer')
-            
+
 
 def analyze_sentiment_score_from_face(landmarks, iw, ih):
     """
@@ -161,8 +163,10 @@ def analyze_sentiment_score_from_face(landmarks, iw, ih):
     right_eye_top = landmarks.landmark[386]
     right_eye_bottom = landmarks.landmark[374]
 
-    left_eye_height = abs(int(left_eye_bottom.y * ih) - int(left_eye_top.y * ih))
-    right_eye_height = abs(int(right_eye_bottom.y * ih) - int(right_eye_top.y * ih))
+    left_eye_height = abs(int(left_eye_bottom.y * ih) -
+                          int(left_eye_top.y * ih))
+    right_eye_height = abs(
+        int(right_eye_bottom.y * ih) - int(right_eye_top.y * ih))
     avg_eye_height = (left_eye_height + right_eye_height) / 2.0
 
     left_eyebrow = landmarks.landmark[70]
@@ -184,6 +188,7 @@ def analyze_sentiment_score_from_face(landmarks, iw, ih):
     else:
         return 50  # Neutral
 
+
 def process_batches_with_mood_analysis(control_queue_mood, shm_name, result_queue):
     mp_face_mesh = mp.solutions.face_mesh
     face_mesh = mp_face_mesh.FaceMesh(
@@ -195,11 +200,13 @@ def process_batches_with_mood_analysis(control_queue_mood, shm_name, result_queu
     shm = shared_memory.SharedMemory(name=shm_name)
     batch_buffer = np.ndarray(
         (BATCH_SIZE,) + FRAME_SHAPE, dtype=FRAME_DTYPE, buffer=shm.buf)
+    mood_scores_accumulator = []
 
     import queue
     while True:
         try:
-            signal, valid_frames, batch_number = control_queue_mood.get(timeout=60)
+            signal, valid_frames, batch_number = control_queue_mood.get(
+                timeout=60)
         except queue.Empty:
             # print("[Mood] Queue timed out. Exiting.")
             break
@@ -219,7 +226,9 @@ def process_batches_with_mood_analysis(control_queue_mood, shm_name, result_queu
                 absolute_frame_idx = batch_number * BATCH_SIZE + idx
                 video_timestamp = absolute_frame_idx / FRAME_RATE
 
-                mood_score = analyze_sentiment_score_from_face(face_landmarks, iw, ih)
+                mood_score = analyze_sentiment_score_from_face(
+                    face_landmarks, iw, ih)
+                mood_scores_accumulator.append(mood_score)
 
                 results_for_batch.append({
                     'frame': absolute_frame_idx,
@@ -235,6 +244,28 @@ def process_batches_with_mood_analysis(control_queue_mood, shm_name, result_queu
         current_results = result_queue["mood_analysis"]
         current_results.extend(results_for_batch)
         result_queue["mood_analysis"] = current_results
+
+    # Calculate and store overall mood score before closing
+    if mood_scores_accumulator:
+        avg_mood = sum(mood_scores_accumulator) / len(mood_scores_accumulator)
+        result_queue["overall_mood_score"] = round(avg_mood, 2)
+        # Calculate percentage mood map
+        mood_counts = {"happy": 0, "neutral": 0, "sad": 0, "angry": 0}
+        for score in mood_scores_accumulator:
+            if score == 100:
+                mood_counts["happy"] += 1
+            elif score == 50:
+                mood_counts["neutral"] += 1
+            elif score == 25:
+                mood_counts["sad"] += 1
+            elif score == 10:
+                mood_counts["angry"] += 1
+        total = sum(mood_counts.values())
+        mood_map = {k: round((v / total) * 100, 2)
+                    if total else 0 for k, v in mood_counts.items()}
+        result_queue["mood_map"] = mood_map
+    else:
+        result_queue["overall_mood_score"] = None
 
     face_mesh.close()
     shm.close()
@@ -259,7 +290,8 @@ def process_batches_with_head_pose(control_queue, shm_name, result_queue):
     with mp_face_mesh.FaceMesh(static_image_mode=False, max_num_faces=1, refine_landmarks=True) as face_mesh:
         while True:
             try:
-                command, batch_index, batch_count = control_queue.get(timeout=60)
+                command, batch_index, batch_count = control_queue.get(
+                    timeout=60)
             except queue.Empty:
                 print("[HeadPose] Queue timed out. Exiting.")
                 break
@@ -282,4 +314,3 @@ def process_batches_with_head_pose(control_queue, shm_name, result_queue):
                         #     nose_tip.x, nose_tip.y, nose_tip.z)})
 
     shm.close()
-

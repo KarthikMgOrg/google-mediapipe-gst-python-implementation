@@ -1,0 +1,85 @@
+⸻
+
+INSTALLATION_INSTRUCTIONS.txt
+
+🛠️ Project Setup Instructions (Ubuntu 24.04)
+
+These steps will help you set up the project using Python 3.11.12 and install GStreamer dependencies.
+
+⸻
+
+🔧 Step 1: Update System
+
+sudo apt update && sudo apt upgrade -y
+
+
+⸻
+
+🐍 Step 2: Install Python 3.11.12
+
+sudo apt install -y wget build-essential zlib1g-dev libncurses5-dev libgdbm-dev \
+libnss3-dev libssl-dev libreadline-dev libffi-dev libsqlite3-dev curl libbz2-dev
+
+cd /tmp
+wget https://www.python.org/ftp/python/3.11.12/Python-3.11.12.tgz
+tar -xf Python-3.11.12.tgz
+cd Python-3.11.12
+./configure --enable-optimizations
+make -j$(nproc)
+sudo make altinstall
+
+Confirm installation:
+
+python3.11 --version
+
+
+⸻
+
+🧪 Step 3: Create Virtual Environment
+
+python3.11 -m venv venv
+source venv/bin/activate
+
+
+⸻
+
+📦 Step 4: Install Python Dependencies
+
+pip install --upgrade pip
+pip install -r requirements.txt
+
+
+⸻
+
+🎥 Step 5: Install GStreamer (Required for Media Processing)
+
+sudo apt install -y \
+gstreamer1.0-tools \
+gstreamer1.0-plugins-base \
+gstreamer1.0-plugins-good \
+gstreamer1.0-plugins-bad \
+gstreamer1.0-plugins-ugly \
+gstreamer1.0-libav \
+python3-gst-1.0 \
+libgstreamer1.0-dev \
+libgstreamer-plugins-base1.0-dev
+
+
+⸻
+
+✅ Step 6: Run Your Application
+
+# Activate virtualenv if not already
+source venv/bin/activate
+
+# Run your script / app
+python3 manage.py runserver
+
+
+⸻
+
+📎 Notes
+	•	Make sure requirements.txt is in the project root.
+	•	If you face any GStreamer-related errors, confirm your Ubuntu version and GStreamer plugin compatibility.
+
+⸻
