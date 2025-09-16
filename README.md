@@ -25,6 +25,10 @@
 
 This project is designed for **low-latency, high-throughput computer vision pipelines.**
 
+## Architecture
+
+<img width="1284" height="709" alt="diagram-export-9-16-2025-6_21_37-PM" src="https://github.com/user-attachments/assets/47075317-0690-4f1f-9db9-d5f87b15ff67" />
+
 ---
 
 ## 📂 Project Structure
